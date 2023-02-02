@@ -1,7 +1,7 @@
 import re
 
 log_file = "path/to/postgresql-slow.log"
-query_data = {}
+source_data = {}
 
 # Extract information from log file
 with open(log_file, "r") as f:
@@ -12,15 +12,18 @@ with open(log_file, "r") as f:
             source = match.group(1)
             query = match.group(4)
             latency = float(match.group(3))
-            count = query_data.get(query, {"source": source, "latency": 0, "count": 0})
-            count["latency"] += latency
-            count["count"] += 1
-            query_data[query] = count
+            count = source_data.get(source, {"queries": {}})
+            query_data = count["queries"].get(query, {"latency": 0, "count": 0})
+            query_data["latency"] += latency
+            query_data["count"] += 1
+            count["queries"][query] = query_data
+            source_data[source] = count
 
-# Print information for each query
-for query, data in query_data.items():
-    print("Source:", data["source"])
-    print("Query Text:", query)
-    print("Latency:", data["latency"], "ms")
-    print("Number of executions:", data["count"])
+# Print information for each source
+for source, data in source_data.items():
+    print("Source:", source)
+    for query, query_data in data["queries"].items():
+        print("  Query Text:", query)
+        print("  Latency:", query_data["latency"], "ms")
+        print("  Number of executions:", query_data["count"])
     print("")
